@@ -3,7 +3,7 @@ import { db } from "@/lib/db/store";
 import { seedDemoProject } from "@/lib/db/seed";
 import { startSimulation, getNextScenario, submitDecision, completeSimulation } from "../engine";
 
-const PROJECT_ID = "seed-ces-2027";
+const PROJECT_ID = "seed-gv60-magma";
 const PROFILE_ID = "seed-profile-demo";
 
 beforeAll(async () => {

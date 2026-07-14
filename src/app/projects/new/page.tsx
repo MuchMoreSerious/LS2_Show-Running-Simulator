@@ -60,7 +60,7 @@ export default function NewProjectPage() {
       {error && <ErrorNote message={error} />}
       <Panel className="p-6 space-y-5">
         <Field label="행사명 *">
-          <input className={inputCls} value={form.name} onChange={set("name")} placeholder="예: CES 2027 Press Conference" />
+          <input className={inputCls} value={form.name} onChange={set("name")} placeholder="예: GV60 MAGMA 미디어 시승회" />
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="행사 유형 *">
