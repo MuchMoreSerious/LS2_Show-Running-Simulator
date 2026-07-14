@@ -1,9 +1,12 @@
 import { db } from "@/lib/db/store";
 import { diagnoseRisks } from "@/lib/simulation/risk-diagnosis";
-import { ok, fail } from "@/lib/api-utils";
+import { ok } from "@/lib/api-utils";
+import { requireOwnedProject } from "@/lib/ownership";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const owned = await requireOwnedProject(id);
+  if ("error" in owned) return owned.error;
   return ok(db.listRisks(id));
 }
 
@@ -12,8 +15,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
  *  자동 진단 결과를 병합한다 (제목 기준 중복 제거). */
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const project = db.getProject(id);
-  if (!project) return fail("프로젝트를 찾을 수 없습니다.", 404);
+  const owned = await requireOwnedProject(id);
+  if ("error" in owned) return owned.error;
 
   const programs = db.listPrograms(id);
   const resources = db.listResources(id);

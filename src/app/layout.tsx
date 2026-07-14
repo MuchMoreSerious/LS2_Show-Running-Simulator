@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { HeaderProfile } from "@/components/HeaderProfile";
 
 export const metadata: Metadata = {
   title: "Show-Running Simulator — AI 행사 데스크 리허설 시뮬레이터",
@@ -17,9 +18,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <span className="tally tally-live" aria-hidden />
               <span className="font-mono font-bold tracking-[0.2em] text-sm">SHOW-RUNNING SIMULATOR</span>
             </Link>
-            <p className="text-xs text-ink-dim hidden sm:block">
-              행사는 한 번뿐이지만, 시뮬레이션 안에서는 여러 번 실패할 수 있다.
-            </p>
+            <div className="flex items-center gap-5">
+              <p className="text-xs text-ink-dim hidden sm:block">
+                행사는 한 번뿐이지만, 시뮬레이션 안에서는 여러 번 실패할 수 있다.
+              </p>
+              <HeaderProfile />
+            </div>
           </div>
         </header>
         <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>

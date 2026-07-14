@@ -2,11 +2,12 @@ import { db } from "@/lib/db/store";
 import { completeSimulation } from "@/lib/simulation/engine";
 import { ok, fail } from "@/lib/api-utils";
 import { SimulationReport } from "@/types/models";
+import { requireOwnedSimulation } from "@/lib/ownership";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ simId: string }> }) {
   const { simId } = await params;
-  const sim = db.getSimulation(simId);
-  if (!sim) return fail("시뮬레이션을 찾을 수 없습니다.", 404);
+  const owned = await requireOwnedSimulation(simId);
+  if ("error" in owned) return owned.error;
 
   try {
     const report = completeSimulation(simId);
@@ -18,8 +19,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ simId:
 
 export async function GET(req: Request, { params }: { params: Promise<{ simId: string }> }) {
   const { simId } = await params;
-  const sim = db.getSimulation(simId);
-  if (!sim) return fail("시뮬레이션을 찾을 수 없습니다.", 404);
+  const owned = await requireOwnedSimulation(simId);
+  if ("error" in owned) return owned.error;
+  const sim = owned.simulation;
   if (sim.status !== "completed") return fail("아직 종료되지 않은 시뮬레이션입니다.");
 
   const report = completeSimulation(simId); // idempotent 재생성

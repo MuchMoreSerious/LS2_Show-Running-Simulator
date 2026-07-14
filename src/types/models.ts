@@ -6,8 +6,16 @@
 export type ImportanceLevel = "low" | "medium" | "high" | "critical";
 export type SafetySensitivity = "low" | "medium" | "high";
 
+export interface Profile {
+  id: string;
+  name: string;
+  pinHash: string; // 4자리 PIN의 해시값 (평문 저장 안 함)
+  createdAt: string;
+}
+
 export interface Project {
   id: string;
+  profileId: string; // 이 프로젝트를 소유한 프로필 — 프로필 간 프로젝트는 서로 보이지 않는다
   name: string;
   eventType: EventType;
   eventDate: string; // ISO date
@@ -146,6 +154,7 @@ export interface Risk {
 
 export interface HistoricalCase {
   id: string;
+  profileId: string; // 레슨런은 기본적으로 프로필(팀/개인) 단위로 공유되고 다른 프로필에는 노출되지 않는다
   sourceDocumentId: string;
   eventType: string;
   situation: string;

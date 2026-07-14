@@ -1,12 +1,14 @@
 import { db } from "@/lib/db/store";
-import { ok, fail } from "@/lib/api-utils";
+import { ok } from "@/lib/api-utils";
 import { computePhaseWindows } from "@/lib/simulation/phases";
 import { toMinutes } from "@/lib/simulation/time";
+import { requireOwnedSimulation } from "@/lib/ownership";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ simId: string }> }) {
   const { simId } = await params;
-  const sim = db.getSimulation(simId);
-  if (!sim) return fail("시뮬레이션을 찾을 수 없습니다.", 404);
+  const owned = await requireOwnedSimulation(simId);
+  if ("error" in owned) return owned.error;
+  const sim = owned.simulation;
 
   const scenarios = db.listScenarios(simId).sort((a, b) => toMinutes(a.triggerTime) - toMinutes(b.triggerTime));
   const decisions = db.listDecisions(simId);

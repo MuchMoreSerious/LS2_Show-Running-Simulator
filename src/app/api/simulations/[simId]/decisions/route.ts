@@ -1,5 +1,6 @@
 import { submitDecision } from "@/lib/simulation/engine";
 import { ok, fail, parseBody } from "@/lib/api-utils";
+import { requireOwnedSimulation } from "@/lib/ownership";
 
 interface DecisionBody {
   scenarioId: string;
@@ -10,6 +11,9 @@ interface DecisionBody {
 
 export async function POST(req: Request, { params }: { params: Promise<{ simId: string }> }) {
   const { simId } = await params;
+  const owned = await requireOwnedSimulation(simId);
+  if ("error" in owned) return owned.error;
+
   const body = await parseBody<DecisionBody>(req);
   if (!body.scenarioId) return fail("scenarioId가 필요합니다.");
   if (!body.selectedOptionId && !body.customResponse?.trim()) {

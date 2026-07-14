@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import {
-  Project, ProjectDocument, EventProgram, Resource, Dependency, Risk,
+  Profile, Project, ProjectDocument, EventProgram, Resource, Dependency, Risk,
   HistoricalCase, Simulation, Scenario, Decision,
 } from "@/types/models";
 
@@ -16,6 +16,7 @@ import {
 // -----------------------------------------------------------------------
 
 interface DbShape {
+  profiles: Profile[];
   projects: Project[];
   documents: ProjectDocument[];
   programs: EventProgram[];
@@ -33,7 +34,7 @@ const DB_FILE = path.join(DB_DIR, "db.json");
 
 function emptyDb(): DbShape {
   return {
-    projects: [], documents: [], programs: [], resources: [], dependencies: [],
+    profiles: [], projects: [], documents: [], programs: [], resources: [], dependencies: [],
     risks: [], historicalCases: [], simulations: [], scenarios: [], decisions: [],
   };
 }
@@ -47,7 +48,9 @@ function readDb(): DbShape {
   ensureDb();
   const raw = fs.readFileSync(DB_FILE, "utf-8");
   try {
-    return JSON.parse(raw) as DbShape;
+    const parsed = JSON.parse(raw) as Partial<DbShape>;
+    // 구버전 데이터 파일(profiles 필드 없음) 호환
+    return { ...emptyDb(), ...parsed };
   } catch {
     return emptyDb();
   }
@@ -73,9 +76,23 @@ export const db = {
     writeDb(emptyDb());
   },
 
-  // --- Projects ---
-  listProjects(): Project[] {
-    return readDb().projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  // --- Profiles ---
+  listProfiles(): Profile[] {
+    return readDb().profiles.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  },
+  getProfile(id: string): Profile | undefined {
+    return readDb().profiles.find((p) => p.id === id);
+  },
+  getProfileByName(name: string): Profile | undefined {
+    return readDb().profiles.find((p) => p.name === name);
+  },
+  createProfile(p: Profile): Profile {
+    return mutate((d) => { d.profiles.push(p); return p; });
+  },
+
+  // --- Projects (프로필 소유) ---
+  listProjects(profileId: string): Project[] {
+    return readDb().projects.filter((p) => p.profileId === profileId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   },
   getProject(id: string): Project | undefined {
     return readDb().projects.find((p) => p.id === id);
@@ -167,9 +184,9 @@ export const db = {
     });
   },
 
-  // --- Historical cases ---
-  listHistoricalCases(): HistoricalCase[] {
-    return readDb().historicalCases;
+  // --- Historical cases (프로필 단위로 공유 — 다른 프로필에는 노출되지 않음) ---
+  listHistoricalCases(profileId: string): HistoricalCase[] {
+    return readDb().historicalCases.filter((c) => c.profileId === profileId);
   },
   addHistoricalCases(cases: HistoricalCase[]): void {
     mutate((d) => { d.historicalCases.push(...cases); });

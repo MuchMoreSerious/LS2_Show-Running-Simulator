@@ -4,16 +4,18 @@ import { seedDemoProject } from "@/lib/db/seed";
 import { startSimulation, getNextScenario, submitDecision, completeSimulation } from "../engine";
 
 const PROJECT_ID = "seed-ces-2027";
+const PROFILE_ID = "seed-profile-demo";
 
-beforeAll(() => {
+beforeAll(async () => {
   db.reset();
-  seedDemoProject();
+  await seedDemoProject();
 });
 
 describe("simulation engine", () => {
   it("시뮬레이션 시작 시 상황 큐가 시간순으로 생성된다", () => {
     const sim = startSimulation({
       projectId: PROJECT_ID,
+      profileId: PROFILE_ID,
       difficulty: "normal",
       phases: ["full_rehearsal", "pre_show", "show"],
       eventFrequency: "normal",
@@ -31,6 +33,7 @@ describe("simulation engine", () => {
   it("선택에 따라 점수가 변화하고, 위험한 선택은 연쇄 상황을 만든다", () => {
     const sim = startSimulation({
       projectId: PROJECT_ID,
+      profileId: PROFILE_ID,
       difficulty: "hard",
       phases: ["full_rehearsal", "pre_show", "show"],
       eventFrequency: "low",
@@ -62,6 +65,7 @@ describe("simulation engine", () => {
   it("시뮬레이션 종료 후 결과 리포트를 생성한다", () => {
     const sim = startSimulation({
       projectId: PROJECT_ID,
+      profileId: PROFILE_ID,
       difficulty: "easy",
       phases: ["show"],
       eventFrequency: "low",

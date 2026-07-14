@@ -17,6 +17,8 @@ services:
         value: production
       - key: AI_PROVIDER
         value: auto
+      - key: APP_SECRET
+        generateValue: true   # Render가 배포 시 안전한 무작위 값을 자동 생성 (세션 쿠키 서명용)
       - key: ANTHROPIC_API_KEY
         sync: false   # Render 대시보드에서 직접 입력 (비워두면 Mock 모드로 동작)
     disk:

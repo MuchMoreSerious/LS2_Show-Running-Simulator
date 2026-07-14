@@ -14,6 +14,7 @@ const FREQUENCY_COUNT: Record<string, number> = { low: 6, normal: 10, high: 16 }
 
 export interface StartSimulationInput {
   projectId: string;
+  profileId: string;
   difficulty: Simulation["difficulty"];
   phases: SimulationPhase[];
   eventFrequency: Simulation["eventFrequency"];
@@ -25,7 +26,9 @@ export function startSimulation(input: StartSimulationInput): Simulation {
   const programs = db.listPrograms(input.projectId);
   const resources = db.listResources(input.projectId);
   const risks = db.listRisks(input.projectId);
-  const cases = db.listHistoricalCases();
+  // 과거 사례(레슨런)는 같은 프로필 소유의 다른 프로젝트에서 온 것까지 포함하되,
+  // 다른 프로필의 사례는 절대 섞이지 않는다.
+  const cases = db.listHistoricalCases(input.profileId);
   const windows = computePhaseWindows(programs);
   const selectedWindows = windows.filter((w) => input.phases.includes(w.phase));
 

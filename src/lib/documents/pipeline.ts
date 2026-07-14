@@ -44,6 +44,7 @@ export async function processDocument(documentId: string): Promise<void> {
       const cases = await provider.extractHistoricalCases(extracted.text, doc.filename);
       const historicalCases: HistoricalCase[] = cases.map((c) => ({
         id: uuid(),
+        profileId: doc.projectId ? (db.getProject(doc.projectId)?.profileId ?? "") : "",
         sourceDocumentId: doc.id,
         eventType: c.eventType,
         situation: c.situation,

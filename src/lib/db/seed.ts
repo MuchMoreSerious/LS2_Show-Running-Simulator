@@ -1,11 +1,15 @@
 import { v4 as uuid } from "uuid";
 import { db } from "./store";
 import {
-  Project, ProjectDocument, EventProgram, Resource, Dependency, Risk, HistoricalCase,
+  Profile, Project, ProjectDocument, EventProgram, Resource, Dependency, Risk, HistoricalCase,
 } from "@/types/models";
 import { calcRiskScore } from "@/lib/simulation/risk";
+import { hashPin } from "@/lib/auth";
 
 const PROJECT_ID = "seed-ces-2027";
+const DEMO_PROFILE_ID = "seed-profile-demo";
+const DEMO_PROFILE_NAME = "데모";
+const DEMO_PROFILE_PIN = "1234";
 const now = new Date().toISOString();
 
 function program(p: Omit<EventProgram, "id" | "projectId" | "confidence" | "status">): EventProgram {
@@ -32,12 +36,26 @@ function risk(r: Omit<Risk, "id" | "projectId" | "riskScore" | "status">): Risk 
   };
 }
 
-export function seedDemoProject(): void {
+/** 데모 프로필이 없으면 만든다. PIN은 README/DEPLOY 문서에 안내된 고정값(1234)이다. */
+async function ensureDemoProfile(): Promise<void> {
+  if (db.getProfile(DEMO_PROFILE_ID)) return;
+  const profile: Profile = {
+    id: DEMO_PROFILE_ID,
+    name: DEMO_PROFILE_NAME,
+    pinHash: await hashPin(DEMO_PROFILE_PIN),
+    createdAt: now,
+  };
+  db.createProfile(profile);
+}
+
+export async function seedDemoProject(): Promise<void> {
+  await ensureDemoProfile();
   // 이미 시드되어 있으면 건너뛴다 (idempotent).
   if (db.getProject(PROJECT_ID)) return;
 
   const project: Project = {
     id: PROJECT_ID,
+    profileId: DEMO_PROFILE_ID,
     name: "CES 2027 Press Conference",
     eventType: "corporate_press_conference",
     eventDate: "2027-01-06",
@@ -133,7 +151,7 @@ export function seedDemoProject(): void {
 
   const historicalCases: HistoricalCase[] = [
     {
-      id: uuid(), sourceDocumentId: pastReportDoc.id, eventType: "corporate_press_conference",
+      id: uuid(), profileId: DEMO_PROFILE_ID, sourceDocumentId: pastReportDoc.id, eventType: "corporate_press_conference",
       situation: "로봇 퍼포먼스 구간에서 배터리 잔량 표시 오류로 배터리 교체가 지연됨",
       rootCause: "배터리 관리 소프트웨어의 잔량 표시 지연",
       response: "예비 배터리로 즉시 교체",
@@ -144,7 +162,7 @@ export function seedDemoProject(): void {
       tags: ["robot"],
     },
     {
-      id: uuid(), sourceDocumentId: pastReportDoc.id, eventType: "corporate_press_conference",
+      id: uuid(), profileId: DEMO_PROFILE_ID, sourceDocumentId: pastReportDoc.id, eventType: "corporate_press_conference",
       situation: "차량 등장 큐에서 무전 채널 불일치로 신호가 누락되어 차량이 20초 늦게 진입",
       rootCause: "드라이버와 무대 감독의 무전 채널 상이",
       response: "카메라 워크로 지연을 자연스럽게 커버",

@@ -2,6 +2,7 @@ import { v4 as uuid } from "uuid";
 import { db } from "@/lib/db/store";
 import { ok, fail, parseBody } from "@/lib/api-utils";
 import { EventProgram, Confidence } from "@/types/models";
+import { requireOwnedProject } from "@/lib/ownership";
 
 interface ReviewedProgram {
   title: string;
@@ -24,6 +25,9 @@ interface ReviewedProgram {
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string; docId: string }> }) {
   const { id: projectId, docId } = await params;
+  const owned = await requireOwnedProject(projectId);
+  if ("error" in owned) return owned.error;
+
   const doc = db.getDocument(docId);
   if (!doc || doc.projectId !== projectId) return fail("문서를 찾을 수 없습니다.", 404);
   if (doc.processingStatus !== "needs_review") return fail("검토 대기 상태의 문서가 아닙니다.");

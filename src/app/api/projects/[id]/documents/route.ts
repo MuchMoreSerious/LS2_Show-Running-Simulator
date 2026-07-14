@@ -5,16 +5,19 @@ import { inferFileType } from "@/lib/documents/extract";
 import { processDocument } from "@/lib/documents/pipeline";
 import { ProjectDocument, DocumentCategory } from "@/types/models";
 import { ok, fail } from "@/lib/api-utils";
+import { requireOwnedProject } from "@/lib/ownership";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const owned = await requireOwnedProject(id);
+  if ("error" in owned) return owned.error;
   return ok(db.listDocuments(id));
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = await params;
-  const project = db.getProject(projectId);
-  if (!project) return fail("프로젝트를 찾을 수 없습니다.", 404);
+  const owned = await requireOwnedProject(projectId);
+  if ("error" in owned) return owned.error;
 
   const form = await req.formData();
   const file = form.get("file");

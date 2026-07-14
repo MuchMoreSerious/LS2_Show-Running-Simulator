@@ -3,10 +3,14 @@ import { db } from "@/lib/db/store";
 import { Project } from "@/types/models";
 import { ok, fail, parseBody } from "@/lib/api-utils";
 import { ensureBootstrapped } from "@/lib/bootstrap";
+import { requireProfileId } from "@/lib/ownership";
 
 export async function GET() {
-  ensureBootstrapped();
-  const projects = db.listProjects();
+  await ensureBootstrapped();
+  const profileId = await requireProfileId();
+  if (!profileId) return fail("로그인이 필요합니다.", 401);
+
+  const projects = db.listProjects(profileId);
   const enriched = projects.map((p) => {
     const documents = db.listDocuments(p.id);
     const simulations = db.listSimulations(p.id);
@@ -22,7 +26,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  ensureBootstrapped();
+  await ensureBootstrapped();
+  const profileId = await requireProfileId();
+  if (!profileId) return fail("로그인이 필요합니다.", 401);
+
   try {
     const body = await parseBody<Partial<Project>>(req);
     if (!body.name || !body.eventType || !body.eventDate) {
@@ -31,6 +38,7 @@ export async function POST(req: Request) {
     const now = new Date().toISOString();
     const project: Project = {
       id: uuid(),
+      profileId,
       name: body.name,
       eventType: body.eventType,
       eventDate: body.eventDate,
