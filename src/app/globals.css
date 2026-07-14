@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   SHOWRUNNER design tokens — "control booth" direction.
+   행사 콘솔/큐시트/타임코드의 세계에서 가져온 시각 언어:
+   어두운 부스 배경 위에 탤리 라이트(앰버=주의, 그린=GO, 레드=치명)가
+   상태를 표시하고, 시각 정보는 모두 모노스페이스 타임코드로 읽힌다.
+------------------------------------------------------------------- */
+:root {
+  --booth: #101418;          /* 부스 배경 (블루 섞인 차콜) */
+  --booth-raised: #181e24;   /* 패널/카드 */
+  --booth-inset: #0b0e11;    /* 함몰 영역 (로그, 입력) */
+  --hairline: #2a323b;       /* 경계선 */
+  --ink: #e8ecef;            /* 본문 */
+  --ink-dim: #8b97a1;        /* 보조 텍스트 */
+  --tally-amber: #f5a623;    /* 진행 중 / 주의 */
+  --tally-green: #3ddc84;    /* GO / 준비 완료 */
+  --tally-red: #ff5252;      /* 치명 / 정지 */
+  --cue-blue: #58a6ff;       /* 정보 / 링크 */
+  --background: var(--booth);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-booth: var(--booth);
+  --color-booth-raised: var(--booth-raised);
+  --color-booth-inset: var(--booth-inset);
+  --color-hairline: var(--hairline);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-tally-amber: var(--tally-amber);
+  --color-tally-green: var(--tally-green);
+  --color-tally-red: var(--tally-red);
+  --color-cue-blue: var(--cue-blue);
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+}
+
+body {
+  background: var(--booth);
+  color: var(--ink);
+  font-family: -apple-system, "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* 타임코드 숫자는 언제나 모노스페이스 + tabular */
+.timecode {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* 탤리 라이트 점 */
+.tally {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+.tally-live { background: var(--tally-amber); box-shadow: 0 0 8px var(--tally-amber); animation: tally-pulse 1.6s ease-in-out infinite; }
+.tally-go { background: var(--tally-green); }
+.tally-stop { background: var(--tally-red); box-shadow: 0 0 8px var(--tally-red); }
+.tally-idle { background: var(--hairline); }
+
+@keyframes tally-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tally-live { animation: none; }
+  * { transition-duration: 0.01ms !important; }
+}
+
+/* 스코어 바 */
+.scorebar { height: 4px; border-radius: 2px; background: var(--booth-inset); overflow: hidden; }
+.scorebar > div { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+::selection { background: rgba(245, 166, 35, 0.3); }
+
+/* 포커스 가시성 */
+:focus-visible { outline: 2px solid var(--tally-amber); outline-offset: 2px; }

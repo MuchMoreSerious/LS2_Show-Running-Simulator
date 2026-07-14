@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HistoricalCaseExtraction",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["situation", "rootCause", "immediateResponse", "finalOutcome", "severity", "preventable", "sourceReference"],
+    "properties": {
+      "eventType": { "type": "string" },
+      "eventPhase": { "type": "string" },
+      "situation": { "type": "string" },
+      "rootCause": { "type": "string" },
+      "immediateResponse": { "type": "string" },
+      "finalOutcome": { "type": "string" },
+      "severity": { "type": "integer", "minimum": 1, "maximum": 5 },
+      "preventable": { "type": "boolean" },
+      "preventionActions": { "type": "array", "items": { "type": "string" } },
+      "relatedResources": { "type": "array", "items": { "type": "string" } },
+      "tags": { "type": "array", "items": { "type": "string" } },
+      "sourceReference": { "type": "string" }
+    }
+  }
+}

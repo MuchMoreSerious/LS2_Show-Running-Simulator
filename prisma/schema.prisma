@@ -1,0 +1,222 @@
+// SHOWRUNNER Prisma Schema
+// -----------------------------------------------------------------------
+// NOTE ON THIS SANDBOX BUILD:
+// This schema is the canonical data model for SHOWRUNNER and is written to
+// run against SQLite (dev) or PostgreSQL (prod, change `provider` below).
+// In THIS execution sandbox, `prisma generate` cannot download its query
+// engine binaries because outbound network access is restricted to a
+// package-registry allowlist that does not include binaries.prisma.sh.
+// So the running MVP in this repo uses a lightweight JSON-file store
+// (src/lib/db/store.ts) that mirrors this exact schema shape 1:1.
+// In a normal environment (or CI) with open network access, run:
+//   npx prisma generate && npx prisma migrate dev
+// and swap the repository implementations in src/lib/db/*.ts to use
+// `@prisma/client` instead of the JSON store — the TS types already match.
+// -----------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id                String   @id @default(uuid())
+  name              String
+  eventType         String
+  eventDate         DateTime
+  venue             String
+  clientName        String
+  audienceSize      Int
+  importanceLevel   String   // low | medium | high | critical
+  safetySensitivity String   // low | medium | high
+  keyPrograms       String   // JSON string array
+  keyPeople         String   // JSON string array
+  keyEquipment      String   // JSON string array
+  readinessScore    Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  documents    Document[]
+  programs     EventProgram[]
+  resources    Resource[]
+  dependencies Dependency[]
+  risks        Risk[]
+  simulations  Simulation[]
+}
+
+model Document {
+  id                String   @id @default(uuid())
+  projectId         String
+  filename          String
+  fileType          String   // pdf | docx | xlsx | csv | txt | md
+  documentCategory  String   // manual | full_timetable | cue_sheet | staffing | equipment_list | content_list | readiness_sheet | floor_plan | past_report | incident_log
+  storagePath       String
+  processingStatus  String   // uploaded | extracting | analyzing | needs_review | completed | error
+  extractedText     String?
+  errorMessage      String?
+  createdAt         DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cases   HistoricalCase[]
+}
+
+model EventProgram {
+  id               String   @id @default(uuid())
+  projectId        String
+  title            String
+  programType      String
+  startTime        String
+  endTime          String
+  location         String
+  description      String?
+  status           String   // planned | at_risk | delayed | in_progress | completed | skipped
+  sequence         Int
+  responsiblePersons String  // JSON string array
+  requiredResources  String // JSON string array
+  preconditions      String // JSON string array
+  backupPlans        String // JSON string array
+  decisionMaker       String?
+  failureImpact        String?
+  sourceDocumentId String?
+  confidence       String   // document_stated | cross_document_inference | ai_estimate
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Resource {
+  id              String  @id @default(uuid())
+  projectId       String
+  name            String
+  resourceType    String  // person | presenter | staff | equipment | vehicle | robot | content | space | power | network
+  owner           String?
+  quantity        Int     @default(1)
+  status          String  // ready | pending | at_risk | unavailable
+  backupAvailable Boolean @default(false)
+  criticality     String  // low | medium | high | critical
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Dependency {
+  id             String @id @default(uuid())
+  projectId      String
+  sourceType     String
+  sourceId       String
+  targetType     String
+  targetId       String
+  dependencyType String // must_finish_before | requires | shares_resource | blocks | backup_for
+  description    String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Risk {
+  id               String  @id @default(uuid())
+  projectId        String
+  title            String
+  category         String  // schedule | staffing | equipment | content | presenter | vehicle | robot | safety | client | audience | media | weather | venue | comms | power
+  description      String
+  probability      Int     // 1-5
+  impact           Int     // 1-5
+  detectabilityMod Float   @default(1.0)
+  riskScore        Float
+  relatedProgramId String?
+  relatedResourceId String?
+  evidenceType     String  // manual | readiness | historical_case | general_knowledge | ai_estimate
+  evidenceText     String?
+  mitigation       String?
+  status           String  @default("open") // open | mitigated | accepted | resolved
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model HistoricalCase {
+  id               String @id @default(uuid())
+  sourceDocumentId String
+  eventType        String
+  situation        String
+  rootCause        String
+  response         String
+  outcome          String
+  severity         Int    // 1-5
+  preventable      Boolean @default(false)
+  prevention       String?
+  relatedResources String? // JSON string array
+  tags             String // JSON string array
+
+  document Document @relation(fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+}
+
+model Simulation {
+  id             String    @id @default(uuid())
+  projectId      String
+  difficulty     String    // easy | normal | hard | live_ops
+  phases         String    // JSON array of selected phases
+  eventFrequency String    // low | normal | high
+  includedRiskCategories String // JSON array
+  currentTime    String
+  status         String    // not_started | running | paused | completed
+  overallScore   Float     @default(100)
+  scheduleScore  Float     @default(100)
+  safetyScore    Float     @default(100)
+  productionScore Float    @default(100)
+  clientScore    Float     @default(100)
+  costScore      Float     @default(100)
+  fatigueScore   Float     @default(0)
+  startedAt      DateTime?
+  completedAt    DateTime?
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scenarios Scenario[]
+  decisions Decision[]
+}
+
+model Scenario {
+  id                String  @id @default(uuid())
+  simulationId      String
+  triggerTime       String
+  category          String
+  title             String
+  description       String
+  severity          String  // low | medium | high | critical
+  relatedProgramId  String?
+  relatedResourceId String?
+  sourceType        String  // deterministic_data | probabilistic | historical_case | chain_reaction
+  sourceReference   String?
+  status            String  @default("pending") // pending | active | resolved | expired
+
+  simulation Simulation      @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  options    ScenarioOption[]
+  decisions  Decision[]
+}
+
+model ScenarioOption {
+  id               String @id @default(uuid())
+  scenarioId       String
+  label            String
+  description      String
+  immediateEffects String // JSON: {schedule, safety, production, client, cost, fatigue}
+  delayedEffects   String? // JSON, optional lagged effects
+  scoreEffects     String  // JSON, duplicate/combined view used by UI
+  newRiskTriggers  String? // JSON array of risk titles/ids this can trigger
+
+  scenario Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+}
+
+model Decision {
+  id               String   @id @default(uuid())
+  simulationId     String
+  scenarioId       String
+  selectedOptionId String?
+  customResponse   String?
+  reasoning        String?
+  scoreChange      String   // JSON snapshot of deltas applied
+  createdAt        DateTime @default(now())
+
+  simulation Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  scenario   Scenario   @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+}

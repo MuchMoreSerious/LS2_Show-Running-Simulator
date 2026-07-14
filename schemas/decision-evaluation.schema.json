@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DecisionEvaluation",
+  "type": "object",
+  "required": ["immediateResult", "scheduleImpact", "safetyImpact", "productionImpact", "costImpact", "newRisks", "evidence"],
+  "properties": {
+    "immediateResult": { "type": "string" },
+    "scheduleImpact": { "type": "string" },
+    "safetyImpact": { "type": "string" },
+    "productionImpact": { "type": "string" },
+    "costImpact": { "type": "string" },
+    "newRisks": { "type": "array", "items": { "type": "string" } },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "label"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["manual", "readiness", "historical_case", "general_knowledge", "ai_estimate"]
+          },
+          "label": { "type": "string" },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "betterAlternative": { "type": "string" },
+    "uncertainty": { "type": "string" },
+    "additionalInfoNeeded": { "type": "array", "items": { "type": "string" } }
+  }
+}
