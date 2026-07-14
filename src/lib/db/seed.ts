@@ -9,7 +9,7 @@ import { hashPin } from "@/lib/auth";
 const PROJECT_ID = "seed-ces-2027";
 const DEMO_PROFILE_ID = "seed-profile-demo";
 const DEMO_PROFILE_NAME = "데모";
-const DEMO_PROFILE_PIN = "1234";
+const DEMO_PROFILE_PIN = "9999";
 const now = new Date().toISOString();
 
 function program(p: Omit<EventProgram, "id" | "projectId" | "confidence" | "status">): EventProgram {
