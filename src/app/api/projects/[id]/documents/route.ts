@@ -14,6 +14,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return ok(db.listDocuments(id));
 }
 
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB — Render 무료 플랜(RAM 512MB)에서 큰 PDF 처리 시 프로세스가 죽는 것을 방지
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = await params;
   const owned = await requireOwnedProject(projectId);
@@ -24,6 +26,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const category = form.get("category") as DocumentCategory | null;
   if (!(file instanceof File)) return fail("업로드할 파일이 필요합니다.");
   if (!category) return fail("문서 카테고리를 지정해야 합니다.");
+
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return fail(`파일이 너무 큽니다 (${(file.size / 1024 / 1024).toFixed(1)}MB). 최대 ${MAX_UPLOAD_BYTES / 1024 / 1024}MB까지 업로드할 수 있습니다.`);
+  }
 
   const fileType = inferFileType(file.name);
   if (!fileType) {

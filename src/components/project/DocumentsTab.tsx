@@ -7,6 +7,10 @@ import { DocumentCategory, ProcessingStatus, ProjectDocument } from "@/types/mod
 import type { ProjectBundle } from "@/app/projects/[id]/page";
 import type { DocumentStructureResult } from "@/lib/ai/provider";
 
+// 서버(src/app/api/projects/[id]/documents/route.ts)와 동일한 값 — Render 무료
+// 플랜(RAM 512MB)에서 큰 PDF 처리로 서버가 죽는 것을 클라이언트에서도 미리 방지
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+
 const STATUS_TONE: Record<ProcessingStatus, "amber" | "green" | "red" | "blue" | "dim"> = {
   uploaded: "dim",
   extracting: "blue",
@@ -35,6 +39,10 @@ export function DocumentsTab({ bundle, onChanged }: { bundle: ProjectBundle; onC
   const upload = async () => {
     const file = fileRef.current?.files?.[0];
     if (!file) { setError("업로드할 파일을 선택하세요."); return; }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setError(`파일이 너무 큽니다 (${(file.size / 1024 / 1024).toFixed(1)}MB). 최대 ${MAX_UPLOAD_BYTES / 1024 / 1024}MB까지 업로드할 수 있습니다.`);
+      return;
+    }
     setError(null);
     setUploading(true);
     try {
@@ -42,7 +50,7 @@ export function DocumentsTab({ bundle, onChanged }: { bundle: ProjectBundle; onC
       fd.append("file", file);
       fd.append("category", category);
       const res = await fetch(`/api/projects/${projectId}/documents`, { method: "POST", body: fd });
-      if (!res.ok) throw new Error((await res.json()).error ?? "업로드 실패");
+      if (!res.ok) throw new Error(await extractErrorMessage(res));
       if (fileRef.current) fileRef.current.value = "";
       onChanged();
     } catch (e) {
@@ -63,7 +71,7 @@ export function DocumentsTab({ bundle, onChanged }: { bundle: ProjectBundle; onC
               ))}
             </select>
           </Field>
-          <Field label="파일 (PDF·DOCX·XLSX·CSV·TXT·MD)">
+          <Field label="파일 (PDF·DOCX·XLSX·CSV·TXT·MD, 최대 8MB)">
             <input ref={fileRef} type="file" accept=".pdf,.docx,.xlsx,.csv,.txt,.md" className={`${inputCls} file:mr-3 file:bg-booth-raised file:border-0 file:text-ink file:px-3 file:py-1 file:rounded file:text-xs`} />
           </Field>
           <Button variant="go" onClick={upload} disabled={uploading}>
@@ -232,4 +240,22 @@ function StructureReviewModal({
       </Panel>
     </div>
   );
+}
+
+/**
+ * 서버가 정상 JSON 대신 빈 응답이나 HTML을 돌려줄 때(연결 중단, 서버 리소스
+ * 부족으로 인한 프로세스 중단 등) 브라우저의 원문 파싱 에러 대신 사용자가
+ * 이해할 수 있는 메시지를 보여준다.
+ */
+async function extractErrorMessage(res: Response): Promise<string> {
+  const text = await res.text().catch(() => "");
+  if (!text) {
+    return "서버 응답이 비어 있습니다. 파일이 너무 크거나 처리 중 서버가 중단됐을 수 있습니다 — 더 작은 파일로 다시 시도해보세요.";
+  }
+  try {
+    const parsed = JSON.parse(text);
+    return parsed.error ?? "업로드 실패";
+  } catch {
+    return `업로드 실패 (서버 오류, 상태 코드 ${res.status})`;
+  }
 }
